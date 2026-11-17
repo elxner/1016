@@ -1,89 +1,121 @@
 <!DOCTYPE html>
-<!-- Declara el documento como HTML5 -->
+<!-- Declara el documento como HTML5 para que los navegadores lo rendericen en modo estándar -->
 <html lang="es">
-<!-- El atributo lang indica que el contenido está en español -->
+<!-- El atributo lang="es" indica que el contenido está en español (ayuda a lectores de pantalla y SEO) -->
 <head>
-  <!-- Codificación de caracteres UTF-8 para tildes y símbolos -->
+  <!-- Codificación de caracteres UTF-8: permite tildes, ñ y símbolos especiales -->
   <meta charset="UTF-8">
-  <!-- Configuración de viewport para que la página ocupe toda la pantalla en móvil y no se pueda hacer zoom -->
+  <!-- Viewport: evita que el usuario haga zoom manual y fija la escala inicial en 1.
+       user-scalable=no evita gestos de zoom que rompen la experiencia AR -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <!-- Título que aparece en la pestaña del navegador -->
   <title>UMSA - Tarjetas Geométricas AR</title>
-  <!-- Inicio de los estilos CSS internos -->
+
+  <!-- ================= ESTILOS CSS ================= -->
   <style>
-    /* Elimina márgenes del body y oculta el desbordamiento para que la cámara ocupe toda la pantalla */
+    /* Elimina márgenes del body y oculta cualquier desbordamiento para que la cámara ocupe toda la pantalla */
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
-    /* Panel de control flotante en la parte superior */
+
+    /* Panel de control flotante en la parte superior de la pantalla */
     #panel {
-      position: fixed; /* Se mantiene fijo aunque se haga scroll */
+      position: fixed;            /* Se queda fijo aunque la escena se mueva */
       top: 10px; left: 10px; right: 10px; /* Separación de los bordes */
-      z-index: 1000; /* Se coloca por encima de la escena AR */
-      background: rgba(0,0,0,0.8); /* Fondo negro semitransparente para legibilidad */
-      color: white; /* Texto en blanco */
-      padding: 10px; /* Espacio interior */
-      border-radius: 10px; /* Bordes redondeados */
-      text-align: center; /* Centra el contenido del panel */
+      z-index: 1000;              /* Por encima del canvas de A-Frame */
+      background: rgba(0,0,0,0.8);/* Fondo negro semitransparente para legibilidad */
+      color: white;               /* Texto blanco */
+      padding: 10px;              /* Espaciado interno */
+      border-radius: 10px;        /* Esquinas redondeadas */
+      text-align: center;         /* Centra el texto y el botón */
     }
-    /* Estilo del título dentro del panel */
+
+    /* Título del panel */
     #panel h3 { margin: 0 0 6px; font-size: 16px; }
-    /* Estilo del texto de estado (cargando, detectado, etc.) */
+
+    /* Línea de estado (mensajes de cámara y detección) */
     #status { font-size: 13px; color: #ffd966; margin: 6px 0; }
-    /* Estilo de la etiqueta de tamaño (Normal/Ampliado) */
+
+    /* Etiqueta que muestra "Normal" o "Ampliado" */
     #sizeLabel { color: #4cd964; font-weight: bold; }
-    /* Estilo del botón de cambio de tamaño */
+
+    /* Estilo del botón */
     button {
-      padding: 10px 18px; /* Relleno interior */
-      font-size: 15px; /* Tamaño de letra */
-      font-weight: bold; /* Texto en negrita */
-      background: #007aff; /* Color de fondo azul */
-      color: white; /* Texto blanco */
-      border: none; /* Sin borde */
-      border-radius: 8px; /* Bordes redondeados */
-      cursor: pointer; /* Cambia el cursor al pasar por encima */
-      margin-top: 6px; /* Separación superior */
+      padding: 10px 18px;         /* Área táctil cómoda */
+      font-size: 15px;            /* Texto legible */
+      font-weight: bold;
+      background: #007aff;        /* Azul estilo iOS */
+      color: white;
+      border: none;               /* Sin borde por defecto */
+      border-radius: 8px;         /* Esquinas redondeadas */
+      cursor: pointer;            /* Cursor de mano en escritorio */
+      margin-top: 6px;            /* Separación del texto superior */
     }
-    /* Efecto visual al pulsar el botón */
+    /* Efecto al presionar el botón (feedback visual) */
     button:active { background: #005bb5; }
-    /* La escena de A-Frame ocupa toda la pantalla de forma fija */
+
+    /* La escena AR ocupa toda la pantalla, fija, sin scroll */
     a-scene { position: fixed; inset: 0; width: 100%; height: 100%; }
   </style>
 
-  <!-- Carga la biblioteca A-Frame versión 1.6.0 desde el CDN oficial -->
+  <!-- ================= LIBRERÍAS ================= -->
+  <!-- A-Frame: motor de escenas 3D basado en entidades-componentes.
+       Versión 1.6.0 es estable y compatible con AR.js -->
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <!-- Carga AR.js desde el repositorio oficial (versión master) -->
+  <!-- AR.js (build para A-Frame): añade el componente "arjs" y el sistema de marcadores.
+       Se usa raw.githack para servir el archivo con el MIME correcto desde GitHub -->
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
 
-  <!-- Panel de interfaz de usuario con información y botón -->
+  <!-- ================= PANEL DE INTERFAZ ================= -->
   <div id="panel">
-    <!-- Título del proyecto -->
-    <h3>REALIDAD AUMENTADA - UMSA</h3>
-    <!-- Nombres de los estudiantes -->
+    <!-- Título del taller -->
+    <h3>REALIDAD AUMENTADA - UMSA v1</h3>
+    <!-- Nombres de los estudiantes (editable) -->
     <div>Estudiante: Jesús Larrazábal, German Marquez</div>
-    <!-- Línea de estado dinámica: muestra qué marcador se detecta o si hay error -->
+    <!-- Mensaje dinámico que se actualiza con JavaScript -->
     <div id="status">Cargando cámara...</div>
-    <!-- Indicador del estado de tamaño actual -->
+    <!-- Etiqueta del estado de tamaño -->
     <div>Tamaño: <span id="sizeLabel">Normal</span></div>
-    <!-- Botón que alterna entre tamaño normal (1.0) y ampliado (1.5) -->
+    <!-- Botón que alterna entre escala 1.0 y 1.5 -->
     <button id="btnSize">CAMBIAR TAMAÑO</button>
   </div>
 
-  <!-- Escena principal de A-Frame con configuración de AR.js mejorada para velocidad -->
+  <!-- ================= ESCENA AR ================= -->
+  <!-- a-scene es el contenedor raíz de A-Frame.
+       - embedded: evita que A-Frame intente pantalla completa por su cuenta (el CSS ya lo hace).
+       - arjs: configura AR.js.
+           * sourceType: webcam → usa la cámara del dispositivo.
+           * trackingMethod: best → elige el mejor algoritmo disponible (normalmente artoolkit).
+           * detectionMode: mono → detecta un marcador a la vez (más rápido y estable).
+           * debugUIEnabled: false → oculta el panel de depuración de AR.js.
+           * maxDetectionRate: 60 → intenta detectar hasta 60 veces por segundo (mejora respuesta).
+           * patternRatio: 0.5 → relación entre el patrón interno y el borde negro; el valor por defecto
+             es 0.5 y funciona bien con Hiro/Kanji. Si el marcador impreso tiene un borde más grueso,
+             este valor puede ajustarse, pero 0.5 es seguro para los presets.
+       - vr-mode-ui: desactiva el botón de gafas VR (no se necesita).
+       - renderer: activa antialiasing y fondo transparente para que se vea la cámara detrás. -->
   <a-scene
     embedded
     arjs="sourceType: webcam; trackingMethod: best; detectionMode: mono; debugUIEnabled: false; maxDetectionRate: 60; patternRatio: 0.5;"
     vr-mode-ui="enabled: false"
-    renderer="antialias: true; alpha: true; precision: medium;"
+    renderer="antialias: true; alpha: true;"
   >
-    <!-- Luz ambiental que ilumina los objetos 3D para que se vean con su color real -->
+    <!-- Luz ambiental: ilumina todos los objetos por igual para que el color se vea bien -->
     <a-light type="ambient" intensity="1"></a-light>
 
-    <!-- Marcador Hiro (Tarjeta A) con seguimiento ligeramente suavizado -->
-    <a-marker id="markerHiro" preset="hiro" smooth="true" smoothCount="3">
-      <!-- Contenedor del grupo para poder escalar el cubo desde JavaScript -->
+    <!-- ============ MARCADOR HIRO → CUBO AZUL ============ -->
+    <!-- a-marker: representa un marcador detectable.
+         - preset="hiro": usa el patrón Hiro incluido en AR.js (no requiere archivo .patt externo).
+         - smooth="true": suaviza la posición del marcador para reducir vibración.
+         - smoothCount="5": número de fotogramas usados en el suavizado (más alto = más estable pero más lento). -->
+    <a-marker id="markerHiro" preset="hiro" smooth="true" smoothCount="5">
+      <!-- Contenedor del objeto del marcador Hiro. Su escala se cambia con el botón.
+           Al ser hijo del marcador, hereda su posición/rotación/escala automáticamente. -->
       <a-entity id="groupHiro">
-        <!-- Cubo azul posicionado en el centro del marcador (0,0,0) -->
+        <!-- Cubo azul.
+             - position="0 0 0": el centro del cubo queda exactamente en el centro del marcador.
+             - width/height/depth="1": cubo de 1 unidad (equivalente a 1 metro en AR.js).
+             - color="#0066FF": azul intenso. -->
         <a-box
           position="0 0 0"
           width="1" height="1" depth="1"
@@ -92,11 +124,14 @@
       </a-entity>
     </a-marker>
 
-    <!-- Marcador Kanji (Tarjeta B) con el mismo suavizado para respuesta rápida -->
-    <a-marker id="markerKanji" preset="kanji" smooth="true" smoothCount="3">
-      <!-- Contenedor del grupo para la esfera -->
+    <!-- ============ MARCADOR KANJI → ESFERA ROJA ============ -->
+    <!-- Mismo esquema que Hiro, pero con preset="kanji" y una esfera -->
+    <a-marker id="markerKanji" preset="kanji" smooth="true" smoothCount="5">
       <a-entity id="groupKanji">
-        <!-- Esfera roja centrada en el marcador -->
+        <!-- Esfera roja.
+             - position="0 0 0": centro de la esfera en el centro del marcador.
+             - radius="0.5": diámetro 1, igual que el cubo.
+             - color="#FF0000": rojo puro. -->
         <a-sphere
           position="0 0 0"
           radius="0.5"
@@ -105,84 +140,77 @@
       </a-entity>
     </a-marker>
 
-    <!-- Cámara virtual que representa los ojos del usuario en la escena AR -->
+    <!-- Cámara de A-Frame: AR.js la reemplaza internamente por la cámara trasera del teléfono -->
     <a-entity camera></a-entity>
   </a-scene>
 
-  <!-- Inicio del script de lógica de la aplicación -->
+  <!-- ================= LÓGICA JAVASCRIPT ================= -->
   <script>
-    // Función autoejecutable para evitar contaminar el ámbito global
+    // IIFE (Immediately Invoked Function Expression): envuelve el código para no contaminar el scope global
     (function() {
-      // Referencia al elemento de estado en el DOM
-      const statusEl = document.getElementById('status');
-      // Referencia a la etiqueta de tamaño
-      const sizeLabel = document.getElementById('sizeLabel');
-      // Referencia al botón de cambio de tamaño
-      const btnSize = document.getElementById('btnSize');
+      // Referencias a los elementos del DOM que se van a manipular
+      const statusEl = document.getElementById('status');   // Mensaje de estado
+      const sizeLabel = document.getElementById('sizeLabel'); // Etiqueta "Normal/Ampliado"
+      const btnSize = document.getElementById('btnSize');   // Botón de cambio de tamaño
 
-      // Variable booleana que indica si el tamaño está ampliado o no
+      // Variable booleana que recuerda si estamos en modo ampliado
       let enlarged = false;
 
-      // Añade un escuchador de eventos al botón para cuando se haga clic
+      // ---------------------------------------------------------
+      // EVENTO: cambio de tamaño
+      // ---------------------------------------------------------
+      // Al hacer clic en el botón, se alterna entre escala 1.0 y 1.5
       btnSize.addEventListener('click', function() {
-        // Invierte el estado (si era false pasa a true y viceversa)
-        enlarged = !enlarged;
-        // Calcula la escala según el estado: 1.5 si está ampliado, 1.0 si es normal
-        const scale = enlarged ? 1.5 : 1.0;
-        // Prepara la cadena de escala en formato "x y z" para A-Frame
-        const scaleStr = `${scale} ${scale} ${scale}`;
+        enlarged = !enlarged;                          // Invierte el estado
+        const scale = enlarged ? 1.5 : 1.0;            // Escala a aplicar
+        const scaleStr = `${scale} ${scale} ${scale}`; // Formato "x y z" que espera A-Frame
 
-        // Obtiene el grupo del marcador Hiro
+        // Se obtienen los contenedores de cada marcador
         const groupHiro = document.getElementById('groupHiro');
-        // Obtiene el grupo del marcador Kanji
         const groupKanji = document.getElementById('groupKanji');
 
-        // Si el grupo Hiro existe, le aplica la nueva escala
+        // Se aplica la escala a ambos grupos (el estado es común, como pide el taller)
         if (groupHiro) groupHiro.setAttribute('scale', scaleStr);
-        // Si el grupo Kanji existe, le aplica la nueva escala
         if (groupKanji) groupKanji.setAttribute('scale', scaleStr);
 
-        // Actualiza el texto de la etiqueta para reflejar el estado actual
+        // Se actualiza la etiqueta visible
         sizeLabel.textContent = enlarged ? 'Ampliado' : 'Normal';
       });
 
-      // Obtiene la referencia a la escena A-Frame
+      // ---------------------------------------------------------
+      // EVENTOS DE LA ESCENA (cámara)
+      // ---------------------------------------------------------
       const scene = document.querySelector('a-scene');
-      // Verifica que la escena exista antes de añadir eventos
       if (scene) {
-        // Evento que se dispara cuando la escena ha terminado de cargar
+        // "loaded" se dispara cuando A-Frame terminó de inicializar la escena
         scene.addEventListener('loaded', function() {
-          // Actualiza el estado indicando que la cámara está lista
           statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.';
         });
-        // Evento que se dispara cuando la cámara se inicializa correctamente
+        // "camera-init" se dispara cuando la cámara ya está emitiendo video
         scene.addEventListener('camera-init', function() {
-          // Vuelve a indicar que la cámara está lista (por si acaso)
           statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.';
         });
-        // Evento que se dispara si hay un error con la cámara
+        // "camera-error" se dispara si el usuario niega el permiso o no hay HTTPS
         scene.addEventListener('camera-error', function() {
-          // Muestra un mensaje de error claro para el usuario
           statusEl.textContent = 'ERROR: Permiso de cámara denegado o HTTPS no disponible.';
         });
       }
 
-      // Obtiene la referencia al marcador Hiro
+      // ---------------------------------------------------------
+      // EVENTOS DE LOS MARCADORES (feedback al usuario)
+      // ---------------------------------------------------------
+      // Marcador Hiro
       const hiro = document.getElementById('markerHiro');
-      // Obtiene la referencia al marcador Kanji
-      const kanji = document.getElementById('markerKanji');
-      // Si el marcador Hiro existe, añade los eventos de detección
       if (hiro) {
-        // Cuando se detecta Hiro, actualiza el estado
+        // Cuando el marcador entra en el campo de visión
         hiro.addEventListener('markerFound', () => { statusEl.textContent = 'Hiro detectado: cubo azul.'; });
-        // Cuando se pierde Hiro, vuelve al mensaje de búsqueda
+        // Cuando el marcador sale del campo de visión
         hiro.addEventListener('markerLost', () => { statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.'; });
       }
-      // Si el marcador Kanji existe, añade los eventos de detección
+      // Marcador Kanji
+      const kanji = document.getElementById('markerKanji');
       if (kanji) {
-        // Cuando se detecta Kanji, actualiza el estado
         kanji.addEventListener('markerFound', () => { statusEl.textContent = 'Kanji detectado: esfera roja.'; });
-        // Cuando se pierde Kanji, vuelve al mensaje de búsqueda
         kanji.addEventListener('markerLost', () => { statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.'; });
       }
     })();
