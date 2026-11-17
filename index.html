@@ -1,329 +1,561 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    <title>Realidad Aumentada - UMSA</title>
+<title>AR UMSA - Marcadores HIRO y KANJI</title>
 
-    <!-- A-Frame 1.6.0 -->
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<!-- A-FRAME 1.6.0 -->
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 
-    <!-- AR.js 3.4.7 -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+<!-- AR.JS 3.4.7 -->
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
 
-    <style>
-      * {
-        box-sizing: border-box;
-      }
+<style>
+* {
+    box-sizing: border-box;
+}
 
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-        background: #111;
-      }
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: #000;
+}
 
-      #panel {
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        z-index: 100;
-        padding: 12px;
-        background: rgba(0, 0, 0, 0.82);
-        color: white;
-        border-radius: 12px;
-      }
+/* PANEL DE CONTROL */
 
-      #panel h3 {
-        margin: 0 0 8px;
-        font-size: 17px;
-        text-align: center;
-      }
+#panel {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 9999;
 
-      #panel p {
-        font-size: 12px;
-        margin: 5px 0;
-        text-align: center;
-      }
+    padding: 12px;
 
-      .botones {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
-        justify-content: center;
-        margin-top: 10px;
-      }
+    background: rgba(0,0,0,0.82);
+    color: white;
 
-      button {
-        border: none;
-        padding: 11px;
-        border-radius: 7px;
-        background: #1769aa;
-        color: white;
-        font-weight: bold;
-      }
+    border-radius: 12px;
+    text-align: center;
+}
 
-      button:active {
-        background: #0b3c68;
-      }
+#panel h3 {
+    margin: 0 0 8px;
+    font-size: 17px;
+}
 
-      #imagenArchivo {
-        display: none;
-      }
+#estado {
+    font-size: 13px;
+    color: #ffff00;
+    margin: 7px;
+}
 
-      #estado {
-        color: #80ff9a;
-        font-weight: bold;
-      }
+#tamano {
+    color: #00ff90;
+}
 
-      a-scene {
-        position: fixed;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-      }
-    </style>
-  </head>
+.botones {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+}
 
-  <body>
-    <!-- INTERFAZ -->
-    <div id="panel">
-      <h3>REALIDAD AUMENTADA - UMSA</h3>
+button {
+    padding: 10px 12px;
+    border: none;
+    border-radius: 7px;
+    background: #1266bd;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+}
 
-      <p>Estudiante: Jesús Larrazábal Salas</p>
+button:active {
+    background: #06427d;
+}
 
-      <p>
-        Estado del marcador:
-        <span id="estado">Esperando tarjeta...</span>
-      </p>
+#archivo {
+    display: none;
+}
 
-      <p>
-        Tamaño:
-        <span id="estadoTamano">Normal</span>
-      </p>
+/* ESCENA */
 
-      <div class="botones">
-        <button onclick="cambiarTamano()">Cambiar tamaño</button>
+a-scene {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
 
-        <button onclick="seleccionarImagen()">Elegir imagen</button>
+</style>
+</head>
 
-        <button onclick="restaurarCubo()">Volver al cubo</button>
-      </div>
+<body>
 
-      <input
-        type="file"
-        id="imagenArchivo"
-        accept="image/*"
-        onchange="cargarImagen(event)"
-      />
+<!-- =================================== -->
+<!-- INTERFAZ -->
+<!-- =================================== -->
+
+<div id="panel">
+
+    <h3>REALIDAD AUMENTADA - UMSA</h3>
+
+    <div>Estudiante: ESCRIBE TU NOMBRE</div>
+
+    <div id="estado">
+        Iniciando cámara...
     </div>
 
-    <!-- ESCENA DE REALIDAD AUMENTADA -->
-    <a-scene
-      embedded
-      vr-mode-ui="enabled: false"
-      renderer="antialias: true; alpha: true"
-      arjs="
-      sourceType: webcam;
-      videoTexture: true;
-      debugUIEnabled: false;
-    "
+    <div>
+        Tamaño: <span id="tamano">Normal</span>
+    </div>
+
+    <div class="botones">
+
+        <button onclick="cambiarTamano()">
+            CAMBIAR TAMAÑO
+        </button>
+
+        <button onclick="document.getElementById('archivo').click()">
+            ELEGIR IMAGEN
+        </button>
+
+        <button onclick="volverCubo()">
+            VOLVER AL CUBO
+        </button>
+
+    </div>
+
+    <input
+        type="file"
+        id="archivo"
+        accept="image/*"
     >
-      <!-- TARJETA A: HIRO -->
-      <a-marker id="marcadorHiro" preset="hiro" smooth="true" smoothCount="5">
-        <a-entity id="grupoHiro">
-          <!-- CUBO AZUL ORIGINAL -->
-          <a-box
-            id="cuboAzul"
+
+</div>
+
+
+<!-- =================================== -->
+<!-- ESCENA DE REALIDAD AUMENTADA -->
+<!-- =================================== -->
+
+<a-scene
+
+    embedded
+
+    vr-mode-ui="enabled: false"
+
+    renderer="
+        antialias: true;
+        alpha: true;
+        logarithmicDepthBuffer: true;
+    "
+
+    arjs="
+        trackingMethod: best;
+        sourceType: webcam;
+        detectionMode: mono;
+        debugUIEnabled: false;
+    "
+
+>
+
+    <!-- LUZ -->
+    <a-light
+        type="ambient"
+        intensity="1">
+    </a-light>
+
+
+    <!-- =================================== -->
+    <!-- MARCADOR A: HIRO -->
+    <!-- =================================== -->
+
+    <a-marker
+
+        id="hiro"
+        preset="hiro"
+
+        emitevents="true"
+
+        smooth="true"
+        smooth-count="5"
+        smooth-tolerance="0.01"
+        smooth-threshold="2"
+
+    >
+
+        <!-- CUBO AZUL -->
+        <a-box
+
+            id="cubo"
+
             position="0 0.5 0"
+
             width="1"
             height="1"
             depth="1"
-            color="#0066FF"
-            material="metalness: 0.2; roughness: 0.4"
-          >
-          </a-box>
 
-          <!-- IMAGEN PERSONALIZADA -->
-          <a-image
+            color="#0066FF"
+
+            material="
+                shader: standard;
+                metalness: 0.1;
+                roughness: 0.5;
+            "
+
+        >
+        </a-box>
+
+
+        <!-- IMAGEN PERSONALIZADA -->
+
+        <a-image
+
             id="imagenAR"
-            position="0 0.02 0"
+
+            position="0 0.01 0"
+
             rotation="-90 0 0"
+
             width="1"
             height="1"
+
             visible="false"
+
             material="
-                  shader: flat;
-                  side: double;
-                  transparent: true;
-                "
-          >
-          </a-image>
-        </a-entity>
-      </a-marker>
+                shader: flat;
+                side: double;
+                transparent: true;
+            "
 
-      <!-- TARJETA B: KANJI -->
-      <a-marker id="marcadorKanji" preset="kanji" smooth="true" smoothCount="5">
-        <a-entity id="grupoKanji">
-          <!-- ESFERA ROJA ORIGINAL -->
-          <a-sphere
-            id="esferaRoja"
+        >
+        </a-image>
+
+    </a-marker>
+
+
+    <!-- =================================== -->
+    <!-- MARCADOR B: KANJI -->
+    <!-- =================================== -->
+
+    <a-marker
+
+        id="kanji"
+        preset="kanji"
+
+        emitevents="true"
+
+        smooth="true"
+        smooth-count="5"
+        smooth-tolerance="0.01"
+        smooth-threshold="2"
+
+    >
+
+        <!-- ESFERA ROJA -->
+
+        <a-sphere
+
+            id="esfera"
+
             position="0 0.5 0"
+
             radius="0.5"
+
             color="#FF0000"
-            material="roughness: 0.35"
-          >
-          </a-sphere>
-        </a-entity>
-      </a-marker>
 
-      <!-- CÁMARA -->
-      <a-entity camera></a-entity>
-    </a-scene>
+            material="
+                shader: standard;
+                roughness: 0.5;
+            "
 
-    <script>
-      // ==========================================
-      // VARIABLES
-      // ==========================================
+        >
+        </a-sphere>
 
-      let ampliado = false;
-      let modoImagen = false;
-      let urlImagen = null;
+    </a-marker>
 
-      // ==========================================
-      // CAMBIAR TAMAÑO
-      // ==========================================
 
-      function cambiarTamano() {
-        ampliado = !ampliado;
+    <!-- CÁMARA -->
 
-        const escala = ampliado ? "1.5 1.5 1.5" : "1 1 1";
+    <a-entity camera></a-entity>
 
-        document.getElementById("grupoHiro").setAttribute("scale", escala);
+</a-scene>
 
-        document.getElementById("grupoKanji").setAttribute("scale", escala);
 
-        document.getElementById("estadoTamano").textContent = ampliado
-          ? "Ampliado"
-          : "Normal";
-      }
+<!-- =================================== -->
+<!-- JAVASCRIPT -->
+<!-- =================================== -->
 
-      // ==========================================
-      // SELECCIONAR IMAGEN
-      // ==========================================
+<script>
 
-      function seleccionarImagen() {
-        document.getElementById("imagenArchivo").click();
-      }
+// ======================================
+// VARIABLES
+// ======================================
 
-      // ==========================================
-      // CARGAR IMAGEN DESDE GALERIA
-      // ==========================================
+let ampliado = false;
 
-      function cargarImagen(event) {
-        const archivo = event.target.files[0];
+let imagenSeleccionada = null;
 
-        if (!archivo) return;
+let hiroDetectado = false;
 
-        if (!archivo.type.startsWith("image/")) {
-          alert("Selecciona un archivo de imagen.");
-          return;
+let kanjiDetectado = false;
+
+const estado = document.getElementById("estado");
+
+const cubo = document.getElementById("cubo");
+
+const esfera = document.getElementById("esfera");
+
+const imagenAR = document.getElementById("imagenAR");
+
+
+// ======================================
+// COMPROBAR BIBLIOTECAS
+// ======================================
+
+window.addEventListener("load", function() {
+
+    if (typeof AFRAME === "undefined") {
+
+        estado.textContent =
+            "ERROR: A-FRAME no se ha cargado.";
+
+        return;
+    }
+
+    if (!AFRAME.components.arjs) {
+
+        estado.textContent =
+            "ERROR: AR.JS no se ha cargado.";
+
+        return;
+    }
+
+    estado.textContent =
+        "Bibliotecas cargadas. Iniciando cámara...";
+
+});
+
+
+// ======================================
+// DETECCION DE HIRO
+// ======================================
+
+const marcadorHiro = document.getElementById("hiro");
+
+marcadorHiro.addEventListener("markerFound", function() {
+
+    hiroDetectado = true;
+
+    actualizarEstado();
+
+});
+
+marcadorHiro.addEventListener("markerLost", function() {
+
+    hiroDetectado = false;
+
+    actualizarEstado();
+
+});
+
+
+// ======================================
+// DETECCION DE KANJI
+// ======================================
+
+const marcadorKanji = document.getElementById("kanji");
+
+marcadorKanji.addEventListener("markerFound", function() {
+
+    kanjiDetectado = true;
+
+    actualizarEstado();
+
+});
+
+marcadorKanji.addEventListener("markerLost", function() {
+
+    kanjiDetectado = false;
+
+    actualizarEstado();
+
+});
+
+
+// ======================================
+// ACTUALIZAR ESTADO
+// ======================================
+
+function actualizarEstado() {
+
+    if (hiroDetectado && kanjiDetectado) {
+
+        estado.textContent =
+            "HIRO y KANJI detectados";
+
+    }
+
+    else if (hiroDetectado) {
+
+        estado.textContent =
+            "HIRO detectado - Cubo / Imagen";
+
+    }
+
+    else if (kanjiDetectado) {
+
+        estado.textContent =
+            "KANJI detectado - Esfera roja";
+
+    }
+
+    else {
+
+        estado.textContent =
+            "Buscando marcadores...";
+
+    }
+
+}
+
+
+// ======================================
+// CAMBIAR TAMAÑO
+// ======================================
+
+function cambiarTamano() {
+
+    ampliado = !ampliado;
+
+    let escala = ampliado ? 1.5 : 1.0;
+
+    cubo.setAttribute("scale",
+        `${escala} ${escala} ${escala}`);
+
+    esfera.setAttribute("scale",
+        `${escala} ${escala} ${escala}`);
+
+    imagenAR.setAttribute("scale",
+        `${escala} ${escala} ${escala}`);
+
+    document.getElementById("tamano").textContent =
+        ampliado ? "Ampliado" : "Normal";
+
+}
+
+
+// ======================================
+// CARGAR IMAGEN DE GALERIA
+// ======================================
+
+document.getElementById("archivo")
+.addEventListener("change", function(event) {
+
+    const archivo = event.target.files[0];
+
+    if (!archivo) return;
+
+    if (!archivo.type.startsWith("image/")) {
+
+        alert("El archivo seleccionado no es una imagen.");
+
+        return;
+    }
+
+    const url = URL.createObjectURL(archivo);
+
+    const prueba = new Image();
+
+    prueba.onload = function() {
+
+        if (imagenSeleccionada) {
+
+            URL.revokeObjectURL(imagenSeleccionada);
+
         }
 
-        if (urlImagen) {
-          URL.revokeObjectURL(urlImagen);
-        }
+        imagenSeleccionada = url;
 
-        urlImagen = URL.createObjectURL(archivo);
+        let proporcion =
+            prueba.naturalWidth / prueba.naturalHeight;
 
-        const imagen = document.getElementById("imagenAR");
+        let ancho = 1;
+        let alto = 1;
 
-        const previsualizacion = new Image();
+        if (proporcion >= 1) {
 
-        previsualizacion.onload = function () {
-          const proporcion =
-            previsualizacion.naturalWidth / previsualizacion.naturalHeight;
-
-          let ancho = 1;
-          let alto = 1;
-
-          if (proporcion >= 1) {
             alto = 1 / proporcion;
-          } else {
-            ancho = proporcion;
-          }
 
-          imagen.setAttribute("width", ancho);
-          imagen.setAttribute("height", alto);
-          imagen.setAttribute("src", urlImagen);
-
-          document.getElementById("cuboAzul").setAttribute("visible", "false");
-
-          imagen.setAttribute("visible", "true");
-
-          modoImagen = true;
-        };
-
-        previsualizacion.src = urlImagen;
-      }
-
-      // ==========================================
-      // VOLVER AL CUBO AZUL
-      // ==========================================
-
-      function restaurarCubo() {
-        document.getElementById("imagenAR").setAttribute("visible", "false");
-
-        document.getElementById("cuboAzul").setAttribute("visible", "true");
-
-        modoImagen = false;
-      }
-
-      // ==========================================
-      // DETECCION DE MARCADORES
-      // ==========================================
-
-      const hiro = document.getElementById("marcadorHiro");
-      const kanji = document.getElementById("marcadorKanji");
-
-      const estado = document.getElementById("estado");
-
-      let hiroVisible = false;
-      let kanjiVisible = false;
-
-      hiro.addEventListener("markerFound", function () {
-        hiroVisible = true;
-        actualizarEstado();
-      });
-
-      hiro.addEventListener("markerLost", function () {
-        hiroVisible = false;
-        actualizarEstado();
-      });
-
-      kanji.addEventListener("markerFound", function () {
-        kanjiVisible = true;
-        actualizarEstado();
-      });
-
-      kanji.addEventListener("markerLost", function () {
-        kanjiVisible = false;
-        actualizarEstado();
-      });
-
-      function actualizarEstado() {
-        if (hiroVisible && kanjiVisible) {
-          estado.textContent = "HIRO y KANJI detectados";
-        } else if (hiroVisible) {
-          estado.textContent = "HIRO detectado";
-        } else if (kanjiVisible) {
-          estado.textContent = "KANJI detectado";
         } else {
-          estado.textContent = "Esperando tarjeta...";
+
+            ancho = proporcion;
+
         }
-      }
-    </script>
-  </body>
+
+        imagenAR.setAttribute("width", ancho);
+
+        imagenAR.setAttribute("height", alto);
+
+        imagenAR.setAttribute("src", imagenSeleccionada);
+
+        imagenAR.addEventListener("materialtextureloaded", function() {
+
+            imagenAR.setAttribute("visible", true);
+
+            cubo.setAttribute("visible", false);
+
+        }, {once: true});
+
+        // Activación posterior a la carga de textura
+        // para evitar mostrar una imagen todavía vacía.
+
+    };
+
+    prueba.onerror = function() {
+
+        URL.revokeObjectURL(url);
+
+        alert("No se pudo cargar la imagen.");
+
+    };
+
+    prueba.src = url;
+
+});
+
+
+// ======================================
+// RESTAURAR CUBO ORIGINAL
+// ======================================
+
+function volverCubo() {
+
+    imagenAR.setAttribute("visible", false);
+
+    cubo.setAttribute("visible", true);
+
+    document.getElementById("archivo").value = "";
+
+}
+
+
+// ======================================
+// FIN
+// ======================================
+
+</script>
+
+</body>
 </html>
