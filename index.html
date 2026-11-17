@@ -1,661 +1,129 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>UMSA - Tarjetas Geométricas AR</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+    #panel {
+      position: fixed; top: 10px; left: 10px; right: 10px; z-index: 1000;
+      background: rgba(0,0,0,0.8); color: white; padding: 10px;
+      border-radius: 10px; text-align: center;
+    }
+    #panel h3 { margin: 0 0 6px; font-size: 16px; }
+    #status { font-size: 13px; color: #ffd966; margin: 6px 0; }
+    #sizeLabel { color: #4cd964; font-weight: bold; }
+    button {
+      padding: 10px 18px; font-size: 15px; font-weight: bold;
+      background: #007aff; color: white; border: none; border-radius: 8px;
+      cursor: pointer; margin-top: 6px;
+    }
+    button:active { background: #005bb5; }
+    a-scene { position: fixed; inset: 0; width: 100%; height: 100%; }
+  </style>
 
-<meta name="viewport"
- content="width=device-width, initial-scale=1.0">
-
-<title>UMSA - Realidad Aumentada</title>
-
-<style>
-* {
-    box-sizing: border-box;
-}
-
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: Arial, sans-serif;
-}
-
-#panel {
-    position: fixed;
-    z-index: 10000;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    padding: 12px;
-    border-radius: 12px;
-    background: rgba(0,0,0,.82);
-    color: white;
-    text-align: center;
-}
-
-#panel h3 {
-    margin: 2px 0 8px;
-    font-size: 17px;
-}
-
-#estado {
-    color: #ffe66b;
-    font-size: 13px;
-    margin: 8px;
-}
-
-#tamano {
-    color: #38e9a0;
-}
-
-.botones {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 7px;
-}
-
-button {
-    border: 0;
-    padding: 11px;
-    border-radius: 7px;
-    background: #0875d1;
-    color: white;
-    font-weight: bold;
-}
-
-button:disabled {
-    opacity: .4;
-}
-
-#archivo {
-    display: none;
-}
-
-a-scene {
-    position: fixed !important;
-    inset: 0;
-    width: 100% !important;
-    height: 100% !important;
-}
-
-</style>
-
-<!-- A-FRAME 1.6.0 -->
-<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <!-- AR.js (versión estable, siguiendo ejemplo oficial) -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 </head>
-
 <body>
 
-<!-- ================================= -->
-<!-- INTERFAZ -->
-<!-- ================================= -->
-
-<div id="panel">
-
+  <!-- Panel de control -->
+  <div id="panel">
     <h3>REALIDAD AUMENTADA - UMSA</h3>
-
-    <div>Estudiante: Watashi</div>
-
-    <div id="estado">
-        Cargando motor de realidad aumentada...
-    </div>
-
-    <div style="margin-bottom:10px">
-        Tamaño: <span id="tamano">Normal</span>
-    </div>
-
-    <div class="botones">
-
-        <button id="btnTamano" disabled>
-            CAMBIAR TAMAÑO
-        </button>
-
-        <button id="btnImagen" disabled>
-            ELEGIR IMAGEN
-        </button>
-
-        <button id="btnCubo" disabled>
-            VOLVER AL CUBO
-        </button>
-
-    </div>
-
-    <input
-        type="file"
-        id="archivo"
-        accept="image/*"
-    >
-
-</div>
-
-
-<script>
-
-// =============================================
-// 1. VARIABLES
-// =============================================
-
-const estado = document.getElementById("estado");
-
-const btnTamano = document.getElementById("btnTamano");
-const btnImagen = document.getElementById("btnImagen");
-const btnCubo = document.getElementById("btnCubo");
-
-const archivo = document.getElementById("archivo");
-
-let ampliado = false;
-let imagenURL = null;
-
-let hiroDetectado = false;
-let kanjiDetectado = false;
-
-let cubo, esfera, imagenAR;
-
-
-// =============================================
-// 2. CARGAR UNA BIBLIOTECA EXTERNA
-// =============================================
-
-function cargarScript(url) {
-
-    return new Promise((resolve, reject) => {
-
-        const script = document.createElement("script");
-
-        script.src = url;
-
-        script.onload = () => resolve();
-
-        script.onerror = () =>
-            reject(new Error("No se pudo cargar: " + url));
-
-        document.head.appendChild(script);
-
-    });
-
-}
-
-
-// =============================================
-// 3. CARGAR AR.JS CON RESPALDO
-// =============================================
-
-async function iniciarBibliotecas() {
-
-    if (typeof AFRAME === "undefined") {
-
-        estado.textContent =
-            "ERROR: No se pudo cargar A-Frame.";
-
-        return false;
-    }
-
-    const fuentes = [
-
-        "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.8/aframe/build/aframe-ar.js",
-
-        "https://raw.githack.com/AR-js-org/AR.js/3.4.8/aframe/build/aframe-ar.js"
-
-    ];
-
-    for (const url of fuentes) {
-
-        try {
-
-            estado.textContent =
-                "Descargando AR.js...";
-
-            await cargarScript(url);
-
-            if (AFRAME.components &&
-                AFRAME.components.arjs) {
-
-                estado.textContent =
-                    "AR.js cargado correctamente.";
-
-                return true;
-            }
-
-            console.warn(
-                "La biblioteca se descargó, pero no registró arjs:",
-                url
-            );
-
-        } catch (error) {
-
-            console.error(error);
-
-        }
-
-    }
-
-    estado.textContent =
-        "ERROR: No se pudo registrar AR.js. Comprueba Internet.";
-
-    return false;
-
-}
-
-
-// =============================================
-// 4. CREAR LA ESCENA
-// =============================================
-
-function crearEscena() {
-
-    const escena = document.createElement("a-scene");
-
-    escena.setAttribute("embedded", "");
-
-    escena.setAttribute(
-        "vr-mode-ui",
-        "enabled: false"
-    );
-
-    escena.setAttribute(
-        "renderer",
-        "antialias: true; alpha: true;"
-    );
-
-    escena.setAttribute(
-        "arjs",
-        "sourceType: webcam; trackingMethod: best; detectionMode: mono; debugUIEnabled: false;"
-    );
-
-    escena.innerHTML = `
-
-        <a-light
-            type="ambient"
-            intensity="1">
-        </a-light>
-
-        <!-- MARCADOR HIRO -->
-
-        <a-marker
-            id="marcadorHiro"
-            preset="hiro"
-            smooth="true"
-            smoothCount="5">
-
-            <a-entity id="grupoHiro">
-
-                <a-box
-                    id="cuboAzul"
-                    position="0 0.5 0"
-                    width="1"
-                    height="1"
-                    depth="1"
-                    color="#0066FF">
-                </a-box>
-
-                <a-image
-                    id="imagenVirtual"
-                    position="0 0.01 0"
-                    rotation="-90 0 0"
-                    width="1"
-                    height="1"
-                    visible="false"
-                    material="shader: flat; side: double; transparent: true;">
-                </a-image>
-
-            </a-entity>
-
-        </a-marker>
-
-
-        <!-- MARCADOR KANJI -->
-
-        <a-marker
-            id="marcadorKanji"
-            preset="kanji"
-            smooth="true"
-            smoothCount="5">
-
-            <a-entity id="grupoKanji">
-
-                <a-sphere
-                    id="esferaRoja"
-                    position="0 0.5 0"
-                    radius="0.5"
-                    color="#FF0000">
-                </a-sphere>
-
-            </a-entity>
-
-        </a-marker>
-
-
-        <!-- CAMARA -->
-
-        <a-entity camera></a-entity>
-
-    `;
-
-    document.body.appendChild(escena);
-
-    return escena;
-
-}
-
-
-// =============================================
-// 5. ESPERAR A QUE A-FRAME INICIE
-// =============================================
-
-function esperarEscena(escena) {
-
-    return new Promise((resolve) => {
-
-        if (escena.hasLoaded) {
-            resolve();
-            return;
-        }
-
-        escena.addEventListener(
-            "loaded",
-            resolve,
-            { once: true }
-        );
-
-    });
-
-}
-
-
-// =============================================
-// 6. CONFIGURAR MARCADORES
-// =============================================
-
-function configurarMarcadores() {
-
-    const hiro =
-        document.getElementById("marcadorHiro");
-
-    const kanji =
-        document.getElementById("marcadorKanji");
-
-    cubo = document.getElementById("cuboAzul");
-
-    esfera = document.getElementById("esferaRoja");
-
-    imagenAR = document.getElementById("imagenVirtual");
-
-
-    hiro.addEventListener("markerFound", () => {
-
-        hiroDetectado = true;
-
-        actualizarEstado();
-
-    });
-
-
-    hiro.addEventListener("markerLost", () => {
-
-        hiroDetectado = false;
-
-        actualizarEstado();
-
-    });
-
-
-    kanji.addEventListener("markerFound", () => {
-
-        kanjiDetectado = true;
-
-        actualizarEstado();
-
-    });
-
-
-    kanji.addEventListener("markerLost", () => {
-
-        kanjiDetectado = false;
-
-        actualizarEstado();
-
-    });
-
-}
-
-
-// =============================================
-// 7. ACTUALIZAR ESTADO
-// =============================================
-
-function actualizarEstado() {
-
-    if (hiroDetectado && kanjiDetectado) {
-
-        estado.textContent =
-            "HIRO y KANJI detectados";
-
-    } else if (hiroDetectado) {
-
-        estado.textContent =
-            "HIRO detectado: cubo o imagen";
-
-    } else if (kanjiDetectado) {
-
-        estado.textContent =
-            "KANJI detectado: esfera roja";
-
-    } else {
-
-        estado.textContent =
-            "Cámara activa: buscando marcadores...";
-
-    }
-
-}
-
-
-// =============================================
-// 8. CAMBIAR TAMAÑO
-// =============================================
-
-function cambiarTamano() {
-
-    ampliado = !ampliado;
-
-    const escala = ampliado ? 1.5 : 1.0;
-
-    document.getElementById("grupoHiro")
-        .setAttribute(
-            "scale",
-            `${escala} ${escala} ${escala}`
-        );
-
-    document.getElementById("grupoKanji")
-        .setAttribute(
-            "scale",
-            `${escala} ${escala} ${escala}`
-        );
-
-    document.getElementById("tamano").textContent =
-        ampliado ? "Ampliado" : "Normal";
-
-}
-
-
-// =============================================
-// 9. CARGAR IMAGEN PERSONALIZADA
-// =============================================
-
-function cargarImagen(event) {
-
-    const file = event.target.files[0];
-
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-
-        alert("Selecciona una imagen válida.");
-
-        return;
-    }
-
-    const nuevaURL = URL.createObjectURL(file);
-
-    const prueba = new Image();
-
-    prueba.onload = () => {
-
-        if (imagenURL) {
-
-            URL.revokeObjectURL(imagenURL);
-
-        }
-
-        imagenURL = nuevaURL;
-
-        const proporcion =
-            prueba.naturalWidth / prueba.naturalHeight;
-
-        let ancho = 1;
-        let alto = 1;
-
-        if (proporcion >= 1) {
-
-            alto = 1 / proporcion;
-
-        } else {
-
-            ancho = proporcion;
-
-        }
-
-        imagenAR.setAttribute("visible", false);
-
-        imagenAR.setAttribute("width", ancho);
-
-        imagenAR.setAttribute("height", alto);
-
-        imagenAR.addEventListener(
-            "materialtextureloaded",
-            function() {
-
-                imagenAR.setAttribute("visible", true);
-
-                cubo.setAttribute("visible", false);
-
-            },
-            { once: true }
-        );
-
-        imagenAR.setAttribute("src", imagenURL);
-
-    };
-
-    prueba.onerror = () => {
-
-        URL.revokeObjectURL(nuevaURL);
-
-        alert("No se pudo abrir la fotografía.");
-
-    };
-
-    prueba.src = nuevaURL;
-
-}
-
-
-// =============================================
-// 10. RESTAURAR CUBO
-// =============================================
-
-function volverCubo() {
-
-    imagenAR.setAttribute("visible", false);
-
-    cubo.setAttribute("visible", true);
-
-    archivo.value = "";
-
-}
-
-
-// =============================================
-// 11. INICIAR APLICACION
-// =============================================
-
-async function iniciarAplicacion() {
-
-    const correcto = await iniciarBibliotecas();
-
-    if (!correcto) return;
-
-    estado.textContent =
-        "Bibliotecas verificadas. Creando escena...";
-
-    const escena = crearEscena();
-
-    await esperarEscena(escena);
-
-    configurarMarcadores();
-
-    btnTamano.disabled = false;
-
-    btnImagen.disabled = false;
-
-    btnCubo.disabled = false;
-
-    btnTamano.addEventListener(
-        "click",
-        cambiarTamano
-    );
-
-    btnImagen.addEventListener(
-        "click",
-        () => archivo.click()
-    );
-
-    btnCubo.addEventListener(
-        "click",
-        volverCubo
-    );
-
-    archivo.addEventListener(
-        "change",
-        cargarImagen
-    );
-
-    estado.textContent =
-        "Escena lista. Iniciando cámara...";
-
-    escena.addEventListener(
-        "camera-init",
-        () => {
-            estado.textContent =
-                "Cámara activa: buscando marcadores...";
-        }
-    );
-
-    escena.addEventListener(
-        "camera-error",
-        (evento) => {
-            console.error(evento);
-
-            estado.textContent =
-                "ERROR DE CÁMARA: revisa los permisos.";
-        }
-    );
-
-}
-
-
-// =============================================
-// EJECUTAR
-// =============================================
-
-iniciarAplicacion();
-
-</script>
-
+    <div>Estudiante: [Tu Nombre]</div>
+    <div id="status">Cargando cámara...</div>
+    <div>Tamaño: <span id="sizeLabel">Normal</span></div>
+    <button id="btnSize">CAMBIAR TAMAÑO</button>
+  </div>
+
+  <!-- Escena AR estática -->
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; trackingMethod: best; detectionMode: mono; debugUIEnabled: false;"
+    vr-mode-ui="enabled: false"
+    renderer="antialias: true; alpha: true;"
+  >
+    <a-light type="ambient" intensity="1"></a-light>
+
+    <!-- Marcador Hiro → Cubo azul -->
+    <a-marker id="markerHiro" preset="hiro" smooth="true" smoothCount="5">
+      <a-entity id="groupHiro">
+        <a-box
+          position="0 0.5 0"
+          width="1" height="1" depth="1"
+          color="#0066FF"
+        ></a-box>
+      </a-entity>
+    </a-marker>
+
+    <!-- Marcador Kanji → Esfera roja -->
+    <a-marker id="markerKanji" preset="kanji" smooth="true" smoothCount="5">
+      <a-entity id="groupKanji">
+        <a-sphere
+          position="0 0.5 0"
+          radius="0.5"
+          color="#FF0000"
+        ></a-sphere>
+      </a-entity>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    (function() {
+      const statusEl = document.getElementById('status');
+      const sizeLabel = document.getElementById('sizeLabel');
+      const btnSize = document.getElementById('btnSize');
+
+      let enlarged = false;
+
+      // Cambiar tamaño global (afecta a ambos marcadores)
+      btnSize.addEventListener('click', function() {
+        enlarged = !enlarged;
+        const scale = enlarged ? 1.5 : 1.0;
+        const scaleStr = `${scale} ${scale} ${scale}`;
+
+        const groupHiro = document.getElementById('groupHiro');
+        const groupKanji = document.getElementById('groupKanji');
+
+        if (groupHiro) groupHiro.setAttribute('scale', scaleStr);
+        if (groupKanji) groupKanji.setAttribute('scale', scaleStr);
+
+        sizeLabel.textContent = enlarged ? 'Ampliado' : 'Normal';
+      });
+
+      // Esperar a que la escena cargue y actualizar estado
+      const scene = document.querySelector('a-scene');
+      if (scene) {
+        scene.addEventListener('loaded', function() {
+          statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.';
+        });
+
+        scene.addEventListener('camera-init', function() {
+          statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.';
+        });
+
+        scene.addEventListener('camera-error', function() {
+          statusEl.textContent = 'ERROR: Permiso de cámara denegado o HTTPS no disponible.';
+        });
+      }
+
+      // Eventos de marcadores (opcional, para depuración)
+      const hiro = document.getElementById('markerHiro');
+      const kanji = document.getElementById('markerKanji');
+      if (hiro) {
+        hiro.addEventListener('markerFound', () => { statusEl.textContent = 'Hiro detectado: cubo azul.'; });
+        hiro.addEventListener('markerLost', () => { statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.'; });
+      }
+      if (kanji) {
+        kanji.addEventListener('markerFound', () => { statusEl.textContent = 'Kanji detectado: esfera roja.'; });
+        kanji.addEventListener('markerLost', () => { statusEl.textContent = 'Cámara activa. Enfoca Hiro o Kanji.'; });
+      }
+    })();
+  </script>
 </body>
 </html>
